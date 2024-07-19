@@ -136,7 +136,6 @@ class ListDefinition {
         [[nodiscard]] ArgDefinition<ARG_T, DATA_T>& defaultList(std::initializer_list<DATA_T> l);
 
     public:
-        bool m_has_default_list = false;
         std::vector<DATA_T> m_default_list;
 };
 

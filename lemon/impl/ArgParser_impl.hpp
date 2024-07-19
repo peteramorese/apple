@@ -70,7 +70,7 @@ LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ValueDefinition<ARG_T, DATA_T>::defaultV
 template <LMN::ArgType ARG_T, typename DATA_T>
 LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ListDefinition<ARG_T, DATA_T>::defaultList(std::initializer_list<DATA_T> l) {
     static_assert(ARG_T == ArgType::List, "Default list only supported for ArgType::List");
-    if (m_has_default_list) {
+    if (!m_default_list.empty()) {
         throw std::invalid_argument("`defaultList()` called twice for same argument");
     }
     m_default_list = l;
@@ -149,15 +149,16 @@ std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE
         }
     }
     if constexpr (ARG_T == ArgType::List) {
-        if (this->m_has_default_list) {
+        if (!this->m_default_list.empty()) {
             std::string default_list_str = "[";
-            for (std::size_t i = 0; i < this->m_default_list.second; ++i) {
-                default_list_str += m_parser->from(this->m_default_list.first[i]);
-                if (i < this->m_default_list.second - 1) {
+            for (std::size_t i = 0; i < this->m_default_list.size(); ++i) {
+                default_list_str += m_parser->from(this->m_default_list[i]);
+                if (i < this->m_default_list.size() - 1) {
                     default_list_str.push_back(',');
                     default_list_str.push_back(' ');
                 }
             }
+            default_list_str.push_back(']');
             doc.default_list = default_list_str;
         }
     }
@@ -184,12 +185,14 @@ std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE
     if constexpr (ARG_T == ArgType::List) {
         auto[c_str_val_list, found] = m_parser->lookupCstrList(&m_flag, m_key);
         if (found) {
-            //arg->m_val = new DATA_T(m_parser->to<DATA_T>(std::string(c_str_val)));
-            DEBUG("TODO");
+            arg->m_list.reserve(c_str_val_list.size());
+            for (auto c_str_val : c_str_val_list) {
+                arg->m_list.push_back(m_parser->to<DATA_T>(std::string(c_str_val)));
+            }
             arg->m_has = true;
         } else {
-            //arg->m_val = this->m_default_val;
-            arg->m_has = this->m_has_default_val;
+            arg->m_has = this->m_default_list.empty();
+            arg->m_list = std::move(this->m_default_list);
         }
     }
 
@@ -253,8 +256,8 @@ bool LMN::ArgParser::enableHelp() {
             std::string description_display_str(desc);
             description_display_str.push_back(' ');
 
-            if (!default_val.empty()) description_display_str += " [Default value: " + default_val + "]";
-            if (!default_list.empty()) description_display_str += " [Default values: " + default_list + "]";
+            if (!default_val.empty()) description_display_str += " (Default value: " + default_val + ")";
+            if (!default_list.empty()) description_display_str += " (Default values: " + default_list + ")";
             std::string key_and_flag_str_adj = key_and_flag_strs[ind++];
             key_and_flag_str_adj += std::string(max_length - key_and_flag_str_adj.size() + 1, ' ');
             PRINT_NAMED(key_and_flag_str_adj, description_display_str);
@@ -268,8 +271,8 @@ bool LMN::ArgParser::enableHelp() {
 
     for (uint32_t i=1; i<m_argc; ++i) {
         if (!m_checked[i]) {
-            ERROR("Unrecognized argument '" << m_argv[i] << "'");
-            throw std::invalid_argument("Unrecognized argument");
+            ERROR("Unrecognized or duplicate argument '" << m_argv[i] << "'");
+            throw std::invalid_argument("Unrecognized or duplicate argument");
         }
     }
     return true;

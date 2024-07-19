@@ -8,6 +8,7 @@ int main(int argc, char** argv) {
     Arg<ArgType::Indicator> test = parser.addDef<ArgType::Indicator>().flag('t').key("test").description("This is a test");
     Arg<ArgType::Indicator> beep = parser.addDef<ArgType::Indicator>().flag('b').key("beep").description("beep borp");
     Arg<ArgType::Value, int> val = parser.addDef<ArgType::Value, int>().flag('d').key("dhoom").description("an integerrr").defaultValue(4);
+    Arg<ArgType::List, int> ll = parser.addDef<ArgType::List, int>().flag('l').key("my-list").description("a listerino :D").defaultList({1, 2, 3, 4, 5});
 
     parser.enableHelp();
 
