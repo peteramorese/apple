@@ -5,6 +5,7 @@
 #include <exception>
 #include <set>
 #include <list>
+#include <memory>
 
 #include "Logging.h"
 
@@ -67,7 +68,7 @@ class ValueArg : public ArgBase {
         template <ArgType ARG_T, typename _DATA_T, typename _BASE>
         friend class ArgDefinition;
     protected:
-        const DATA_T* m_val = nullptr;
+        std::shared_ptr<DATA_T> m_val = nullptr;
 };
 
 template <typename DATA_T>
@@ -86,7 +87,7 @@ class ListArg : public ArgBase {
         template <ArgType ARG_T, typename _DATA_T, typename _BASE>
         friend class ArgDefinition;
     protected:
-        std::pair<const DATA_T*, std::size_t> m_list = {nullptr, 0};
+        std::vector<DATA_T> m_list;
 };
 
 /* TODO */
@@ -98,7 +99,7 @@ class Arg : public _BASE {
         Arg() = default;
 
         template <class ARG_DEF>
-        Arg(const ARG_DEF& def);
+        Arg(ARG_DEF& def);
 
         Arg& operator=(const Arg&) = default;
 
@@ -124,8 +125,7 @@ class ValueDefinition {
         [[nodiscard]] ArgDefinition<ARG_T, DATA_T>& defaultValue(DATA_T&& default_val);
 
     public:
-        bool m_has_default_val = false;
-        const DATA_T* m_default_val = nullptr;
+        std::shared_ptr<DATA_T> m_default_val = nullptr;
 };
 
 template <ArgType ARG_T, typename DATA_T>
@@ -137,7 +137,7 @@ class ListDefinition {
 
     public:
         bool m_has_default_list = false;
-        std::pair<const DATA_T*, std::size_t> m_default_list = {nullptr, 0};
+        std::vector<DATA_T> m_default_list;
 };
 
 class FileDefinition {};
@@ -169,7 +169,7 @@ class ArgDefinition : public _BASE {
 
         friend class Arg<ARG_T, DATA_T>;
     private:
-        Arg<ARG_T, DATA_T>& parse() const;
+        std::unique_ptr<Arg<ARG_T, DATA_T>> parse();
 
     private:
         ArgParser* m_parser;
