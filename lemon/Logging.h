@@ -46,16 +46,16 @@
     #define WARN(msg) 
     #define NEW_LINE 
 #else
-    #define LOG(msg) std::cout << "\033[1;36m >[LOG]\033[0;37m " << msg << "\033[0m \n"
+    #define LOG(msg) std::cout << "\r\033[1;36m >[LOG]\033[0;37m " << msg << "\033[0m \n"
     #define PRINT(msg) std::cout << "\033[0;37m" << msg << "\033[0m \n"
     #define PRINT_VEC2(msg, vec2) std::cout << "\033[0;37m" << msg << " (" << vec2[0] << ", " << vec2[1] << ")\033[0m \n"
     #define PRINT_VEC3(msg, vec3) std::cout << "\033[0;37m" << msg << " (" << vec3[0] << ", " << vec3[1] << ", " << vec3[2] << ")\033[0m \n"
-    #define PRINT_NAMED(name, msg) std::cout << "        "<< LMN_LOG_BGREEN(name) << ": " << LMN_LOG_WHITE(msg) << "\n"
-    #define DEBUG(msg) std::cout << LMN_LOG_BCYAN(" >[DBG] ("<< __func__ << "): ") << LMN_LOG_WHITE(msg) << "\n"
-    #define INFO(msg) std::cout << LMN_LOG_BWHITE(" >[IFO]: ") << LMN_LOG_WHITE(msg) << " \n"
-    #define INFO_SMLN(msg) std::cout << "\r" << LMN_LOG_BWHITE(" >[IFO]: ") << LMN_LOG_WHITE(msg) << std::flush
-    #define ERROR(msg) std::cerr << LMN_LOG_BRED(" >[ERR] ERROR ("<< __func__ << "): ") << LMN_LOG_WHITE(msg) << "\n"
-    #define WARN(msg) std::cout << LMN_LOG_BYELLOW(" >[WRN] WARNING ("<< __func__ << "): ") << LMN_LOG_WHITE(msg) << "\n"
+    #define PRINT_NAMED(name, msg) std::cout << "\r        "<< LMN_LOG_BGREEN(name) << ": " << LMN_LOG_WHITE(msg) << "\n"
+    #define DEBUG(msg) std::cout << LMN_LOG_BCYAN("\r[DBG] ("<< __func__ << "): ") << LMN_LOG_WHITE(msg) << "\n"
+    #define INFO(msg) std::cout << LMN_LOG_BWHITE("\r[IFO]: ") << LMN_LOG_WHITE(msg) << " \n"
+    #define INFO_SMLN(msg) std::cout << "\r" << LMN_LOG_BWHITE("\r[IFO]: ") << LMN_LOG_WHITE(msg) << std::flush
+    #define ERROR(msg) std::cerr << LMN_LOG_BRED("\r[ERR] ERROR ("<< __func__ << "): ") << LMN_LOG_WHITE(msg) << "\n"
+    #define WARN(msg) std::cout << LMN_LOG_BYELLOW("\r[WRN] WARNING ("<< __func__ << "): ") << LMN_LOG_WHITE(msg) << "\n"
     #define NEW_LINE std::cout<<"\n"
 #endif
 

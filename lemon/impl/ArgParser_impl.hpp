@@ -8,12 +8,12 @@
 /* Arg */
 
 template <typename DATA_T>
-const DATA_T* LMN::ValueArg<DATA_T>::value() const {
+const DATA_T& LMN::ValueArg<DATA_T>::value() const {
     if (!m_val) {
         ERROR("No value or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
     } 
-    return m_val;
+    return *m_val;
 }
 
 template <typename DATA_T>
@@ -60,6 +60,34 @@ LMN::Arg<ARG_T, DATA_T, _BASE>::operator bool() const {
 }
 
 /* ArgDefiniton */
+
+template <LMN::ArgType ARG_T, typename DATA_T>
+LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ValueDefinition<ARG_T, DATA_T>::defaultValue(DATA_T&& default_val) {
+    static_assert(ARG_T == ArgType::Value, "Default value only supported for ArgType::Value");
+    if (m_has_default_val) {
+        throw std::invalid_argument("`defaultValue()` called twice for same argument");
+    }
+
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    m_default_val = new DATA_T(std::move(default_val));
+    m_has_default_val = true;
+    ArgDefinition<ARG_T, DATA_T>& beep = static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
+    return static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
+}
+
+template <LMN::ArgType ARG_T, typename DATA_T>
+LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ListDefinition<ARG_T, DATA_T>::defaultList(std::initializer_list<DATA_T> l) {
+    static_assert(ARG_T == ArgType::List, "Default list only supported for ArgType::List");
+    if (m_has_default_list) {
+        throw std::invalid_argument("`defaultList()` called twice for same argument");
+    }
+
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    //ret_arg.default_val = std::move(default_val);
+    m_has_default_list = true;
+    return static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
+}
+
 
 template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
 LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::ArgDefinition(ArgParser* parser) 
@@ -115,32 +143,6 @@ LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BAS
 }
 
 template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ValueDefinition<ARG_T, DATA_T, _BASE>::defaultValue(DATA_T&& default_val) {
-    static_assert(ARG_T == ArgType::Value, "Default value only supported for ArgType::Value");
-    if (m_has_default_val) {
-        throw std::invalid_argument("`defaultValue()` called twice for same argument");
-    }
-
-    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
-    default_val = std::move(default_val);
-    m_has_default_val = true;
-    return *this;
-}
-
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ListDefinition<ARG_T, DATA_T, _BASE>::defaultList(std::initializer_list<DATA_T> l) {
-    static_assert(ARG_T == ArgType::List, "Default list only supported for ArgType::List");
-    if (m_has_default_list) {
-        throw std::invalid_argument("`defaultList()` called twice for same argument");
-    }
-
-    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
-    //ret_arg.default_val = std::move(default_val);
-    m_has_default_list = true;
-    return *this;
-}
-
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
 LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
 
 template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
@@ -184,6 +186,32 @@ LMN::Arg<ARG_T, DATA_T>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() const
     // Use the parser to lookup the values
     Arg<ARG_T, DATA_T>* arg = new Arg<ARG_T, DATA_T>();
     arg->label = m_parser->getLabel(m_has_flag ? &m_flag : nullptr, m_key);
+
+    if constexpr (ARG_T == ArgType::Indicator) {
+        arg->m_has = m_parser->lookupIndicator(&m_flag, m_key);
+    }
+    if constexpr (ARG_T == ArgType::Value) {
+        auto[c_str_val, found] = m_parser->lookupCstrValue(&m_flag, m_key);
+        if (found) {
+            arg->m_val = new DATA_T(m_parser->to<DATA_T>(std::string(c_str_val)));
+            arg->m_has = true;
+        } else {
+            arg->m_val = this->m_default_val;
+            arg->m_has = this->m_has_default_val;
+        }
+    }
+    if constexpr (ARG_T == ArgType::List) {
+        auto[c_str_val_list, found] = m_parser->lookupCstrList(&m_flag, m_key);
+        if (found) {
+            //arg->m_val = new DATA_T(m_parser->to<DATA_T>(std::string(c_str_val)));
+            DEBUG("TODO");
+            arg->m_has = true;
+        } else {
+            //arg->m_val = this->m_default_val;
+            arg->m_has = this->m_has_default_val;
+        }
+    }
+
     return *arg;
 }
 
@@ -220,11 +248,11 @@ bool LMN::ArgParser::enableHelp() {
         for (auto&[flag, key, _, __, ___] : m_docs) {
             std::string key_and_flag;
             if (!!flag && !!key) {
-                key_and_flag = getKey(key) + " or " + getFlag(flag);
+                key_and_flag = getKeyStr(key) + " or " + getFlagStr(flag);
             } else if (!!key) {
-                key_and_flag = getKey(key);
+                key_and_flag = getKeyStr(key);
             } else if (!!flag) {
-                key_and_flag = getFlag(flag);
+                key_and_flag = getFlagStr(flag);
             } else {
                 ASSERT(false, "Empty key and flag");
             }
@@ -259,9 +287,8 @@ bool LMN::ArgParser::enableHelp() {
 
     for (uint32_t i=1; i<m_argc; ++i) {
         if (!m_checked[i]) {
-            ERROR("Unrecognized arg '" << m_argv[i] << "'");
-            std::exit(1);
-            return false;
+            ERROR("Unrecognized argument '" << m_argv[i] << "'");
+            throw std::invalid_argument("Unrecognized argument");
         }
     }
     return true;
@@ -271,8 +298,8 @@ bool LMN::ArgParser::isValue(const char* first_char) const {
     return *first_char != '-';
 }
 
-std::string LMN::ArgParser::getFlag(char flag) const {
-    if (isValue(&flag)) {
+std::string LMN::ArgParser::getFlagStr(char flag) const {
+    if (!isValue(&flag)) {
         throw std::invalid_argument("Dash character '-' is not a valid flag");
     }
     std::string s;
@@ -281,8 +308,8 @@ std::string LMN::ArgParser::getFlag(char flag) const {
     return s;
 }
 
-std::string LMN::ArgParser::getKey(const char* key) const {
-    if (isValue(key)) {
+std::string LMN::ArgParser::getKeyStr(const char* key) const {
+    if (!isValue(key)) {
         throw std::invalid_argument("Key definition must not start with dashes '-'");
     }
     return "--" + std::string(key);
@@ -307,10 +334,12 @@ void LMN::ArgParser::checkNewKey(const char* key) {
 }
 
 std::string LMN::ArgParser::getLabel(const char* flag, const char* key) {
-    if (!!key) {
-        return getKey(key);
+    if (!!key && !!flag) {
+        return getKeyStr(key) + " (" + getFlagStr(*flag) + ")";
+    } else if (!!key) {
+        return getKeyStr(key);
     } else if (!!flag) {
-        return getFlag(*flag);
+        return getFlagStr(*flag);
     } else {
         throw std::invalid_argument("Cannot get label if flag and key are unspecified");
     }
@@ -319,8 +348,8 @@ std::string LMN::ArgParser::getLabel(const char* flag, const char* key) {
 bool LMN::ArgParser::lookupIndicator(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
-    std::string flag_str = !!flag ? std::string() : getFlag(*flag);
-    std::string key_str = !!key ? std::string() : getKey(key);
+    std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
+    std::string key_str = !!key ? getKeyStr(key) : std::string();
 
     if (m_help) {
         return false;
@@ -343,8 +372,8 @@ bool LMN::ArgParser::lookupIndicator(const char* flag, const char* key) {
 std::pair<const char*, bool> LMN::ArgParser::lookupCstrValue(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
-    std::string flag_str = !!flag ? std::string() : getFlag(*flag);
-    std::string key_str = !!key ? std::string() : getKey(key);
+    std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
+    std::string key_str = !!key ? getKeyStr(key) : std::string();
 
     if (m_help) {
         return {nullptr, false};
@@ -356,14 +385,20 @@ std::pair<const char*, bool> LMN::ArgParser::lookupCstrValue(const char* flag, c
         }
 
         std::string arg = m_argv[i];
-        if ((flag && arg == flag_str) || (key && arg == key_str)) {
+        if ((!!flag && arg == flag_str) || (!!key && arg == key_str)) {
             m_checked[i] = true;
             if ((i == m_argc - 1) || !isValue(m_argv[i + 1])) {
                 ERROR("Missing value for '" << getLabel(flag, key) << "'");
                 throw std::invalid_argument("Missing value");
             }
-            if ((i < m_argc - 2) && !isValue(m_argv[i + 2])) {
+            if ((i < m_argc - 2) && isValue(m_argv[i + 2])) {
                 WARN("Found multiple values for '" << getLabel(flag, key) << "' when only one is expected. Ignoring extra values");
+                for (std::size_t j = i + 1; j < m_argc; ++j) {
+                    if (!isValue(m_argv[j])) {
+                        break;
+                    }
+                    m_checked[j] = true;
+                }
             }
             
             m_checked[i + 1] = true;
@@ -376,8 +411,8 @@ std::pair<const char*, bool> LMN::ArgParser::lookupCstrValue(const char* flag, c
 std::pair<std::list<const char*>, bool> LMN::ArgParser::lookupCstrList(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
-    std::string flag_str = !!flag ? std::string() : getFlag(*flag);
-    std::string key_str = !!key ? std::string() : getKey(key);
+    std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
+    std::string key_str = !!key ? getKeyStr(key) : std::string();
 
     if (m_help) {
         return {std::list<const char*>(), false};
