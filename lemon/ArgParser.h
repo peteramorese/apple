@@ -74,20 +74,15 @@ class ValueArg : public ArgBase {
 template <typename DATA_T>
 class ListArg : public ArgBase {
     public:
-        /// @brief Access List type argument
-        /// @return Pointer to start of list
-        const DATA_T* begin() const;
-
-        /// @brief Access List type argument
-        /// @return Pointer to end of list
-        const DATA_T* end() const;
+        /// @brief Access List argument
+        const std::list<DATA_T>& list() const;
 
         ~ListArg();
 
         template <ArgType ARG_T, typename _DATA_T, typename _BASE>
         friend class ArgDefinition;
     protected:
-        std::vector<DATA_T> m_list;
+        std::list<DATA_T> m_list;
 };
 
 /* TODO */
@@ -136,7 +131,7 @@ class ListDefinition {
         [[nodiscard]] ArgDefinition<ARG_T, DATA_T>& defaultList(std::initializer_list<DATA_T> l);
 
     public:
-        std::vector<DATA_T> m_default_list;
+        std::list<DATA_T> m_default_list;
 };
 
 class FileDefinition {};

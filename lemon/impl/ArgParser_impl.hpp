@@ -20,21 +20,12 @@ template <typename DATA_T>
 LMN::ValueArg<DATA_T>::~ValueArg() {}
 
 template <typename DATA_T>
-const DATA_T* LMN::ListArg<DATA_T>::begin() const {
-    if (!m_list.first) {
+const std::list<DATA_T>& LMN::ListArg<DATA_T>::list() const {
+    if (m_list.empty()) {
         ERROR("No list or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
     }
-    return m_list.first;
-}
-
-template <typename DATA_T>
-const DATA_T* LMN::ListArg<DATA_T>::end() const {
-    if (!m_list.first) {
-        ERROR("No list or default found for agument '" << label << "'");
-        throw std::logic_error("Missing argument");
-    }
-    return m_list.first + m_list.second;
+    return m_list;
 }
 
 template <typename DATA_T>
@@ -128,7 +119,7 @@ LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
 
 template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
 std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() {
-    if (!m_has_flag || !m_has_key) {
+    if (!m_has_flag && !m_has_key) {
         throw std::invalid_argument("Must specify either a key or flag, did you call `flag()` or `key()`?");
     }
 
@@ -151,14 +142,13 @@ std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE
     if constexpr (ARG_T == ArgType::List) {
         if (!this->m_default_list.empty()) {
             std::string default_list_str = "[";
-            for (std::size_t i = 0; i < this->m_default_list.size(); ++i) {
-                default_list_str += m_parser->from(this->m_default_list[i]);
-                if (i < this->m_default_list.size() - 1) {
-                    default_list_str.push_back(',');
-                    default_list_str.push_back(' ');
-                }
+            for (const auto& element : this->m_default_list) {
+                default_list_str += m_parser->from(element);
+                default_list_str.push_back(',');
+                default_list_str.push_back(' ');
             }
-            default_list_str.push_back(']');
+            default_list_str.pop_back();
+            default_list_str.back() = ']';
             doc.default_list = default_list_str;
         }
     }
@@ -185,7 +175,6 @@ std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE
     if constexpr (ARG_T == ArgType::List) {
         auto[c_str_val_list, found] = m_parser->lookupCstrList(&m_flag, m_key);
         if (found) {
-            arg->m_list.reserve(c_str_val_list.size());
             for (auto c_str_val : c_str_val_list) {
                 arg->m_list.push_back(m_parser->to<DATA_T>(std::string(c_str_val)));
             }
@@ -194,6 +183,10 @@ std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE
             arg->m_has = this->m_default_list.empty();
             arg->m_list = std::move(this->m_default_list);
         }
+    }
+    if (m_required && !arg->m_has) {
+        ERROR("Argument '" << arg->label << "' must be specified");
+        throw std::invalid_argument("Missing required argument");
     }
 
     return arg;
