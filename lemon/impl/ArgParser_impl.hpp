@@ -6,134 +6,145 @@
 #include <exception>
 
 /* Arg */
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::Arg<ARG_T, DATA_T>::operator bool() const {
-    return m_has;
-}
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-const DATA_T& LMN::Arg<ARG_T, DATA_T>::value() const {
-    static_assert(ARG_T == ArgType::Value, "Value only supported for ArgType::Value");
+template <typename DATA_T>
+const DATA_T* LMN::ValueArg<DATA_T>::value() const {
     if (!m_val) {
-        ERROR("No value found for agument '" << m_label << "' (no default)");
+        ERROR("No value or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
     } 
-    return m_has;
+    return m_val;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-const DATA_T* LMN::Arg<ARG_T, DATA_T>::begin() const {
-    static_assert(ARG_T == ArgType::List, "List access only supported for ArgType::List");
+template <typename DATA_T>
+LMN::ValueArg<DATA_T>::~ValueArg() {
+    if (m_val) {
+        delete m_val;
+    }
+}
+
+template <typename DATA_T>
+const DATA_T* LMN::ListArg<DATA_T>::begin() const {
     if (!m_list.first) {
-        ERROR("No list found for agument '" << m_label << "' (no default)");
+        ERROR("No list or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
     }
     return m_list.first;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-const DATA_T* LMN::Arg<ARG_T, DATA_T>::end() const {
-    static_assert(ARG_T == ArgType::List, "List access only supported for ArgType::List");
+template <typename DATA_T>
+const DATA_T* LMN::ListArg<DATA_T>::end() const {
     if (!m_list.first) {
-        ERROR("No list found for agument '" << m_label << "' (no default)");
+        ERROR("No list or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
     }
     return m_list.first + m_list.second;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::Arg<ARG_T, DATA_T>::~Arg() {
-    if (m_val) {
-        delete m_val;
-    }
+template <typename DATA_T>
+LMN::ListArg<DATA_T>::~ListArg() {
     if (m_list.first) {
         delete[] m_list.first;
     }
 }
 
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <class ARG_DEF>
+LMN::Arg<ARG_T, DATA_T, _BASE>::Arg(const ARG_DEF& def) {
+    *this = def.parse(); 
+}
+
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::Arg<ARG_T, DATA_T, _BASE>::operator bool() const {
+    return m_has;
+}
+
 /* ArgDefiniton */
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T>::ArgDefinition(ArgParser* parser) 
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::ArgDefinition(ArgParser* parser) 
     : m_parser(parser)
 {}
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgDefinition<ARG_T, DATA_T>::flag(char flag) {
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::flag(char flag) {
     if (m_has_flag) {
         throw std::invalid_argument("`flag()` called twice for same argument");
     }
 
-    LMN::ArgDefinition<ARG_T, DATA_T> ret_arg = *this;
-    ret_arg.m_flag = flag;
-    ret_arg.m_has_flag = true;
-    return ret_arg;
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    m_flag = flag;
+    m_has_flag = true;
+    return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgDefinition<ARG_T, DATA_T>::key(const char* key) {
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::key(const char* key) {
     if (m_has_key) {
         throw std::invalid_argument("`key()` called twice for same argument");
     }
 
-    LMN::ArgDefinition<ARG_T, DATA_T> ret_arg = *this;
-    ret_arg.m_key = key;
-    ret_arg.m_has_key = true;
-    return ret_arg;
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    m_key = key;
+    m_has_key = true;
+    return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgDefinition<ARG_T, DATA_T>::description(const char* desc) {
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::description(const char* desc) {
     if (m_has_desc) {
         throw std::invalid_argument("`description()` called twice for same argument");
     }
 
-    LMN::ArgDefinition<ARG_T, DATA_T> ret_arg = *this;
-    ret_arg.m_desc = desc;
-    ret_arg.m_has_desc = true;
-    return ret_arg;
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    m_desc = desc;
+    m_has_desc = true;
+    return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgDefinition<ARG_T, DATA_T>::required() {
-    static_assert(ARG_T != ArgType::Indicator, "Cannot require indicator");
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::required() {
+    static_assert(ARG_T != ArgType::Indicator, "Cannot require indicator arg");
     if (m_required) {
         throw std::invalid_argument("`required()` called twice for same argument");
     }
 
-    LMN::ArgDefinition<ARG_T, DATA_T> ret_arg = *this;
-    ret_arg.m_required = true;
-    return ret_arg;
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    m_required = true;
+    return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgDefinition<ARG_T, DATA_T>::defaultValue(DATA_T&& default_val) {
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ValueDefinition<ARG_T, DATA_T, _BASE>::defaultValue(DATA_T&& default_val) {
     static_assert(ARG_T == ArgType::Value, "Default value only supported for ArgType::Value");
-    if (m_has_default_list) {
+    if (m_has_default_val) {
         throw std::invalid_argument("`defaultValue()` called twice for same argument");
     }
 
-    LMN::ArgDefinition<ARG_T, DATA_T> ret_arg = *this;
-    ret_arg.default_val = std::move(default_val);
-    ret_arg.m_has_default_val = true;
-    return ret_arg;
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
+    default_val = std::move(default_val);
+    m_has_default_val = true;
+    return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgDefinition<ARG_T, DATA_T>::defaultList(std::initializer_list<DATA_T> l) {
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ListDefinition<ARG_T, DATA_T, _BASE>::defaultList(std::initializer_list<DATA_T> l) {
     static_assert(ARG_T == ArgType::List, "Default list only supported for ArgType::List");
     if (m_has_default_list) {
         throw std::invalid_argument("`defaultList()` called twice for same argument");
     }
 
-    LMN::ArgDefinition<ARG_T, DATA_T> ret_arg = *this;
+    //LMN::ArgDefinition<ARG_T, DATA_T, _BASE> ret_arg = *this;
     //ret_arg.default_val = std::move(default_val);
-    ret_arg.m_has_default_val = true;
-    return ret_arg;
+    m_has_default_list = true;
+    return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T>::operator LMN::Arg<ARG_T, DATA_T>() {
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
+
+template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+LMN::Arg<ARG_T, DATA_T>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() const {
     if (!m_has_flag || !m_has_key) {
         throw std::invalid_argument("Must specify either a key or flag, did you call `flag()` or `key()`?");
     }
@@ -149,26 +160,31 @@ LMN::ArgDefinition<ARG_T, DATA_T>::operator LMN::Arg<ARG_T, DATA_T>() {
     if (m_has_desc) {
         doc.description = m_desc;
     }
-    if (m_has_default_val) {
-        doc.default_value = m_parser->from(*m_default_val);
-    }
-    if (m_has_default_list) {
-        std::string default_list_str = "[";
-        for (std::size_t i = 0; i < m_default_list.second; ++i) {
-            default_list_str += m_parser->from(m_default_list.first[i]);
-            if (i < m_default_list.second - 1) {
-                default_list_str.push_back(',');
-                default_list_str.push_back(' ');
-            }
+    if constexpr (ARG_T == ArgType::Value) {
+        if (this->m_has_default_val) {
+            doc.default_value = m_parser->from(*this->m_default_val);
         }
-        doc.default_list = default_list_str;
+    }
+    if constexpr (ARG_T == ArgType::List) {
+        if (this->m_has_default_list) {
+            std::string default_list_str = "[";
+            for (std::size_t i = 0; i < this->m_default_list.second; ++i) {
+                default_list_str += m_parser->from(this->m_default_list.first[i]);
+                if (i < this->m_default_list.second - 1) {
+                    default_list_str.push_back(',');
+                    default_list_str.push_back(' ');
+                }
+            }
+            doc.default_list = default_list_str;
+        }
     }
 
     m_parser->addDocumentation(std::move(doc));
 
     // Use the parser to lookup the values
-    Arg<ARG_T, DATA_T> arg;
-    arg.m_label = m_parser->getLabel(m_has_flag ? &m_flag : nullptr, m_key);
+    Arg<ARG_T, DATA_T>* arg = new Arg<ARG_T, DATA_T>();
+    arg->label = m_parser->getLabel(m_has_flag ? &m_flag : nullptr, m_key);
+    return *arg;
 }
 
 /* ArgParser */
@@ -188,9 +204,67 @@ LMN::ArgParser::ArgParser(int argc, char** argv)
     m_unique_flags.insert('h');
 }
 
-template <ArgType ARG_T, typename DATA_T = void>
-ArgDefinition<ARG_T, DATA_T> addDef() {
+template <LMN::ArgType ARG_T, typename DATA_T = void>
+LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgParser::addDef() {
     return ArgDefinition<ARG_T, DATA_T>(this);
+}
+
+bool LMN::ArgParser::enableHelp() {
+    if (m_help) {
+        PRINT("\n   [Help]\n");
+
+        std::vector<std::string> key_and_flag_strs;
+        key_and_flag_strs.reserve(m_docs.size());
+
+        std::size_t max_length = 0;
+        for (auto&[flag, key, _, __, ___] : m_docs) {
+            std::string key_and_flag;
+            if (!!flag && !!key) {
+                key_and_flag = getKey(key) + " or " + getFlag(flag);
+            } else if (!!key) {
+                key_and_flag = getKey(key);
+            } else if (!!flag) {
+                key_and_flag = getFlag(flag);
+            } else {
+                ASSERT(false, "Empty key and flag");
+            }
+
+            if (key_and_flag.size() > max_length)
+                max_length = key_and_flag.size();
+
+            key_and_flag_strs.push_back(std::move(key_and_flag));
+        }
+
+        std::string help_key_and_flag = "--help or -h";
+        help_key_and_flag += std::string(max_length - help_key_and_flag.size() + 1, ' ');
+        PRINT_NAMED(help_key_and_flag, "Display this message");
+
+        std::size_t ind = 0;
+        for (auto&[flag, key, desc, default_val, default_list] : m_docs) {
+            std::string description_display_str(desc);
+            description_display_str.push_back(' ');
+
+            if (!default_val.empty()) description_display_str += " [Default value: " + default_val + "]";
+            if (!default_list.empty()) description_display_str += " [Default values: " + default_list + "]";
+            std::string key_and_flag_str_adj = key_and_flag_strs[ind++];
+            key_and_flag_str_adj += std::string(max_length - key_and_flag_str_adj.size() + 1, ' ');
+            PRINT_NAMED(key_and_flag_str_adj, description_display_str);
+        }
+
+        NEW_LINE;
+
+        std::exit(0);
+        return false;
+    }
+
+    for (uint32_t i=1; i<m_argc; ++i) {
+        if (!m_checked[i]) {
+            ERROR("Unrecognized arg '" << m_argv[i] << "'");
+            std::exit(1);
+            return false;
+        }
+    }
+    return true;
 }
 
 bool LMN::ArgParser::isValue(const char* first_char) const {
@@ -296,6 +370,7 @@ std::pair<const char*, bool> LMN::ArgParser::lookupCstrValue(const char* flag, c
             return {m_argv[i + 1], true};
         }
     }
+    return {nullptr, false};
 }
 
 std::pair<std::list<const char*>, bool> LMN::ArgParser::lookupCstrList(const char* flag, const char* key) {
@@ -333,4 +408,9 @@ std::pair<std::list<const char*>, bool> LMN::ArgParser::lookupCstrList(const cha
             return {lst, true};
         }
     }
+    return {lst, false};
+}
+
+void LMN::ArgParser::addDocumentation(Documentation&& documentation) {
+    m_docs.push_back(std::move(documentation));
 }

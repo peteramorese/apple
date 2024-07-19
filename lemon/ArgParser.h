@@ -19,23 +19,47 @@ enum class ArgType {
 
 
 // Forward dec
-template <ArgType ARG_T, typename DATA_T>
+template <ArgType ARG_T, typename DATA_T, typename _BASE>
 class ArgDefinition;
 
 class ArgParser;
 
-template <ArgType ARG_T, typename DATA_T = void>
-class Arg {
+// Conditional inheriter
+template <ArgType ARG_T, class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base;
+
+template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgType::Indicator, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = INDICATOR_T;};
+template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgType::Value, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = VALUE_T;};
+template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgType::List, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = LIST_T;};
+template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgType::File, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = FILE_T;};
+
+/* Arg classes */
+
+struct ArgBase {
+    std::string label;
+};
+
+class IndicatorArg : public ArgBase {};
+
+template <typename DATA_T>
+class ValueArg : public ArgBase {
     public:
-        Arg() = default;
-
-        /// @brief Check if the argument was passed
-        operator bool() const;
-
         /// @brief Get the value of a Value type argument
         /// @return Value
-        const DATA_T& value() const;
+        const DATA_T* value() const;
 
+        ~ValueArg();
+    protected:
+        const DATA_T* m_val = nullptr;
+};
+
+template <typename DATA_T>
+class ListArg : public ArgBase {
+    public:
         /// @brief Access List type argument
         /// @return Pointer to start of list
         const DATA_T* begin() const;
@@ -44,50 +68,95 @@ class Arg {
         /// @return Pointer to end of list
         const DATA_T* end() const;
 
-        ~Arg();
-
-        friend class ArgDefinition<ARG_T, DATA_T>;
-    private:
-        std::string m_label;
-
-        bool m_has = false;
-
-        const DATA_T* m_val = nullptr;
+        ~ListArg();
+    protected:
         std::pair<const DATA_T*, std::size_t> m_list = {nullptr, 0};
 };
 
-template <ArgType ARG_T, typename DATA_T = void>
-class ArgDefinition {
+/* TODO */
+class FileArg {};
+
+template <ArgType ARG_T, typename DATA_T = void, typename _BASE = typename conditional_base<ARG_T, IndicatorArg, ValueArg<DATA_T>, ListArg<DATA_T>, FileArg>::type>
+class Arg : public _BASE {
+    public:
+        Arg() = default;
+
+        template <class ARG_DEF>
+        Arg(const ARG_DEF& def);
+
+        Arg& operator=(const Arg&) = default;
+
+        //template <class ARG_DEF>
+        //void operator=(const ARG_DEF& def);
+
+        /// @brief Check if the argument was passed
+        operator bool() const;
+
+        //template <ArgType _ARG_T, typename _DATA_T, typename _ARG_BASE>
+        //friend class ArgDefinition<_ARG_T, _DATA_T, _ARG_BASE>;
+
+    private:
+        bool m_has = false;
+
+};
+
+/* Arg Definitions */
+
+class IndicatorDefinition {};
+
+template <ArgType ARG_T, typename DATA_T, typename _BASE>
+class ValueDefinition {
+    public:
+        /// @brief Supply a default value. Only enabled for Value type
+        /// @param default_val Default value
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T, _BASE>& defaultValue(DATA_T&& default_val);
+    public:
+        bool m_has_default_val = false;
+        const DATA_T* m_default_val = nullptr;
+};
+
+template <ArgType ARG_T, typename DATA_T, typename _BASE>
+class ListDefinition {
+    public:
+        /// @brief Supply a default list. Only enabled for List type
+        /// @param default_val Default value
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T, _BASE>& defaultList(std::initializer_list<DATA_T> l);
+    public:
+        bool m_has_default_list = false;
+        std::pair<const DATA_T*, std::size_t> m_default_list = {nullptr, 0};
+};
+
+class FileDefinition;
+
+template <ArgType ARG_T, typename DATA_T = void, typename _BASE = typename conditional_base<ARG_T, IndicatorArg, ValueArg<DATA_T>, ListArg<DATA_T>, FileArg>::type>
+class ArgDefinition : public _BASE{
     public:
         ArgDefinition(ArgParser* parser);
 
         /// @brief Add flag definition
         /// @param flag Flag value
-        ArgDefinition<ARG_T, DATA_T> flag(char flag);
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T, _BASE>& flag(char flag);
 
         /// @brief Add key definition
         /// @param key Key value
-        ArgDefinition<ARG_T, DATA_T> key(const char* key);
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T, _BASE>& key(const char* key);
 
         /// @brief Add argument description
         /// @param desc Description string. Must be string literal or live until enableHelp() is called
-        ArgDefinition<ARG_T, DATA_T> description(const char* desc);
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T, _BASE>& description(const char* desc);
 
         /// @brief Assert that an agrument is required
-        ArgDefinition<ARG_T, DATA_T> required();
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T, _BASE>& required();
 
-        /// @brief Supply a default value. Only enabled for Value type
-        /// @param default_val Default value
-        ArgDefinition<ARG_T, DATA_T> defaultValue(DATA_T&& default_val);
-
-        /// @brief Supply a default list. Only enabled for List type
-        /// @param default_val Default value
-        ArgDefinition<ARG_T, DATA_T> defaultList(std::initializer_list<DATA_T> l);
-
-        /// @brief Parse the argument
-        operator Arg<ARG_T, DATA_T>();
+        ///// @brief Parse the argument
+        //operator Arg<ARG_T, DATA_T>();
 
         ~ArgDefinition();
+
+        friend class Arg<ARG_T, DATA_T>;
+    private:
+        Arg<ARG_T, DATA_T>& parse() const;
+
     private:
         ArgParser* m_parser;
 
@@ -95,8 +164,6 @@ class ArgDefinition {
         bool m_has_key = false;
         bool m_has_desc = false;
         bool m_required = false;
-        bool m_has_default_val = false;
-        bool m_has_default_list = false;
 
         bool m_parsed = false;
 
@@ -104,17 +171,12 @@ class ArgDefinition {
         const char* m_key = nullptr;;
         const char* m_desc = nullptr;
 
-        const DATA_T* m_default_val = nullptr;
-        std::pair<const DATA_T*, std::size_t> m_default_list = {nullptr, 0};
 };
 
 class ArgParser {
     public:
         ArgParser(int argc, char** argv);
 
-        template <ArgType ARG_T, typename DATA_T>
-        friend class Argument;
-        
         template <typename T>
         T to(const std::string& str);
 
@@ -124,6 +186,10 @@ class ArgParser {
         template <ArgType ARG_T, typename DATA_T = void>
         ArgDefinition<ARG_T, DATA_T> addDef();
 
+        bool enableHelp();
+
+        template <ArgType ARG_T, typename DATA_T, typename _BASE>
+        friend class ArgDefinition;
     private:
         struct Documentation {
             //Documentation() = default;
@@ -134,11 +200,11 @@ class ArgParser {
             //    , description(description_)
             //{}
 
-            char flag;
-            const char* key;
-            const char* description;
-            std::string default_value;
-            std::string default_list;
+            char flag = '\0';
+            const char* key = nullptr;
+            const char* description = nullptr;
+            std::string default_value = std::string();
+            std::string default_list = std::string();
         };
 
     private:
@@ -192,7 +258,7 @@ namespace BRY {
 
     class IndicatorArgument {};
 
-    template <typename T, typename BASE = std::conditional<!std::is_same<T, void>::value, DataArgument<T>, IndicatorArgument>::type>
+    template <typename T, typename BASE = typename std::conditional<!std::is_same<T, void>::value, DataArgument<T>, IndicatorArgument>::type>
     class Argument : public BASE {
         public:
             Argument(bool valid) : m_valid(valid) {}
