@@ -9,7 +9,7 @@
 
 #include "Logging.h"
 
-namespace LMN {
+namespace lemon {
 
 enum class ArgType {
     Indicator, 

@@ -8,7 +8,7 @@
 /* Arg */
 
 template <typename DATA_T>
-const DATA_T& LMN::ValueArg<DATA_T>::value() const {
+const DATA_T& lemon::ValueArg<DATA_T>::value() const {
     if (!m_val) {
         ERROR("No value or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
@@ -17,10 +17,10 @@ const DATA_T& LMN::ValueArg<DATA_T>::value() const {
 }
 
 template <typename DATA_T>
-LMN::ValueArg<DATA_T>::~ValueArg() {}
+lemon::ValueArg<DATA_T>::~ValueArg() {}
 
 template <typename DATA_T>
-const std::list<DATA_T>& LMN::ListArg<DATA_T>::list() const {
+const std::list<DATA_T>& lemon::ListArg<DATA_T>::list() const {
     if (m_list.empty()) {
         ERROR("No list or default found for agument '" << label << "'");
         throw std::logic_error("Missing argument");
@@ -29,26 +29,26 @@ const std::list<DATA_T>& LMN::ListArg<DATA_T>::list() const {
 }
 
 template <typename DATA_T>
-LMN::ListArg<DATA_T>::~ListArg() {}
+lemon::ListArg<DATA_T>::~ListArg() {}
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
 template <class ARG_DEF>
-LMN::Arg<ARG_T, DATA_T, _BASE>::Arg(ARG_DEF& def) {
+lemon::Arg<ARG_T, DATA_T, _BASE>::Arg(ARG_DEF& def) {
     std::unique_ptr<Arg<ARG_T, DATA_T, _BASE>> parsed_arg = def.parse();
     // Copy the parsed arg
 
     *this = *parsed_arg; 
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::Arg<ARG_T, DATA_T, _BASE>::operator bool() const {
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::Arg<ARG_T, DATA_T, _BASE>::operator bool() const {
     return m_has;
 }
 
 /* ArgDefiniton */
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ValueDefinition<ARG_T, DATA_T>::defaultValue(DATA_T&& default_val) {
+template <lemon::ArgType ARG_T, typename DATA_T>
+lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ValueDefinition<ARG_T, DATA_T>::defaultValue(DATA_T&& default_val) {
     static_assert(ARG_T == ArgType::Value, "Default value only supported for ArgType::Value");
     if (!!m_default_val) {
         throw std::invalid_argument("`defaultValue()` called twice for same argument");
@@ -58,8 +58,8 @@ LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ValueDefinition<ARG_T, DATA_T>::defaultV
     return static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T>
-LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ListDefinition<ARG_T, DATA_T>::defaultList(std::initializer_list<DATA_T> l) {
+template <lemon::ArgType ARG_T, typename DATA_T>
+lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ListDefinition<ARG_T, DATA_T>::defaultList(std::initializer_list<DATA_T> l) {
     static_assert(ARG_T == ArgType::List, "Default list only supported for ArgType::List");
     if (!m_default_list.empty()) {
         throw std::invalid_argument("`defaultList()` called twice for same argument");
@@ -69,13 +69,13 @@ LMN::ArgDefinition<ARG_T, DATA_T>& LMN::ListDefinition<ARG_T, DATA_T>::defaultLi
 }
 
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::ArgDefinition(ArgParser* parser) 
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::ArgDefinition(ArgParser* parser) 
     : m_parser(parser)
 {}
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::flag(char flag) {
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::flag(char flag) {
     if (m_has_flag) {
         throw std::invalid_argument("`flag()` called twice for same argument");
     }
@@ -84,8 +84,8 @@ LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BAS
     return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::key(const char* key) {
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::key(const char* key) {
     if (m_has_key) {
         throw std::invalid_argument("`key()` called twice for same argument");
     }
@@ -94,8 +94,8 @@ LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BAS
     return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::description(const char* desc) {
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::description(const char* desc) {
     if (m_has_desc) {
         throw std::invalid_argument("`description()` called twice for same argument");
     }
@@ -104,8 +104,8 @@ LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BAS
     return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::required() {
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::required() {
     static_assert(ARG_T != ArgType::Indicator, "Cannot require indicator arg");
     if (m_required) {
         throw std::invalid_argument("`required()` called twice for same argument");
@@ -114,11 +114,11 @@ LMN::ArgDefinition<ARG_T, DATA_T, _BASE>& LMN::ArgDefinition<ARG_T, DATA_T, _BAS
     return *this;
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
 
-template <LMN::ArgType ARG_T, typename DATA_T, typename _BASE>
-std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() {
+template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() {
     if (!m_has_flag && !m_has_key) {
         throw std::invalid_argument("Must specify either a key or flag, did you call `flag()` or `key()`?");
     }
@@ -194,7 +194,7 @@ std::unique_ptr<LMN::Arg<ARG_T, DATA_T>> LMN::ArgDefinition<ARG_T, DATA_T, _BASE
 
 /* ArgParser */
 
-LMN::ArgParser::ArgParser(int argc, char** argv) 
+lemon::ArgParser::ArgParser(int argc, char** argv) 
     : m_argc(argc)
     , m_argv(argv)
     , m_checked(argc, false) 
@@ -209,12 +209,12 @@ LMN::ArgParser::ArgParser(int argc, char** argv)
     m_unique_flags.insert('h');
 }
 
-template <LMN::ArgType ARG_T, typename DATA_T = void>
-LMN::ArgDefinition<ARG_T, DATA_T> LMN::ArgParser::addDef() {
+template <lemon::ArgType ARG_T, typename DATA_T = void>
+lemon::ArgDefinition<ARG_T, DATA_T> lemon::ArgParser::addDef() {
     return ArgDefinition<ARG_T, DATA_T>(this);
 }
 
-bool LMN::ArgParser::enableHelp() {
+bool lemon::ArgParser::enableHelp() {
     if (m_help) {
         PRINT("\n   [Help]\n");
 
@@ -271,11 +271,11 @@ bool LMN::ArgParser::enableHelp() {
     return true;
 }
 
-bool LMN::ArgParser::isValue(const char* first_char) const {
+bool lemon::ArgParser::isValue(const char* first_char) const {
     return *first_char != '-';
 }
 
-std::string LMN::ArgParser::getFlagStr(char flag) const {
+std::string lemon::ArgParser::getFlagStr(char flag) const {
     if (!isValue(&flag)) {
         throw std::invalid_argument("Dash character '-' is not a valid flag");
     }
@@ -285,14 +285,14 @@ std::string LMN::ArgParser::getFlagStr(char flag) const {
     return s;
 }
 
-std::string LMN::ArgParser::getKeyStr(const char* key) const {
+std::string lemon::ArgParser::getKeyStr(const char* key) const {
     if (!isValue(key)) {
         throw std::invalid_argument("Key definition must not start with dashes '-'");
     }
     return "--" + std::string(key);
 }
 
-void LMN::ArgParser::checkNewFlag(const char* flag) {
+void lemon::ArgParser::checkNewFlag(const char* flag) {
     if (!!flag && m_unique_flags.find(*flag) != m_unique_flags.end()) {
         ERROR("Duplicate flag: " << *flag);
         throw std::logic_error("Duplicate flag");
@@ -301,7 +301,7 @@ void LMN::ArgParser::checkNewFlag(const char* flag) {
     }
 }
 
-void LMN::ArgParser::checkNewKey(const char* key) {
+void lemon::ArgParser::checkNewKey(const char* key) {
     if (!!key && m_unique_keys.find(std::string(key)) != m_unique_keys.end()) {
         ERROR("Duplicate key: " << *key);
         throw std::logic_error("Duplicate key");
@@ -310,7 +310,7 @@ void LMN::ArgParser::checkNewKey(const char* key) {
     }
 }
 
-std::string LMN::ArgParser::getLabel(const char* flag, const char* key) {
+std::string lemon::ArgParser::getLabel(const char* flag, const char* key) {
     if (!!key && !!flag) {
         return getKeyStr(key) + " (" + getFlagStr(*flag) + ")";
     } else if (!!key) {
@@ -322,7 +322,7 @@ std::string LMN::ArgParser::getLabel(const char* flag, const char* key) {
     }
 }
 
-bool LMN::ArgParser::lookupIndicator(const char* flag, const char* key) {
+bool lemon::ArgParser::lookupIndicator(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
     std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
@@ -346,7 +346,7 @@ bool LMN::ArgParser::lookupIndicator(const char* flag, const char* key) {
     return false;
 }
 
-std::pair<const char*, bool> LMN::ArgParser::lookupCstrValue(const char* flag, const char* key) {
+std::pair<const char*, bool> lemon::ArgParser::lookupCstrValue(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
     std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
@@ -385,7 +385,7 @@ std::pair<const char*, bool> LMN::ArgParser::lookupCstrValue(const char* flag, c
     return {nullptr, false};
 }
 
-std::pair<std::list<const char*>, bool> LMN::ArgParser::lookupCstrList(const char* flag, const char* key) {
+std::pair<std::list<const char*>, bool> lemon::ArgParser::lookupCstrList(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
     std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
@@ -423,6 +423,6 @@ std::pair<std::list<const char*>, bool> LMN::ArgParser::lookupCstrList(const cha
     return {lst, false};
 }
 
-void LMN::ArgParser::addDocumentation(Documentation&& documentation) {
+void lemon::ArgParser::addDocumentation(Documentation&& documentation) {
     m_docs.push_back(std::move(documentation));
 }
