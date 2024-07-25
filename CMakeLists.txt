@@ -11,7 +11,7 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 endif()
 
 if(NOT DEFINED LMN_BUILD_EXECUTABLES)
-    option(LMN_BUILD_EXECUTABLES "Build executables (ON by default, set to OFF for building just the library target)" ON)
+    option(LMN_BUILD_EXECUTABLES "Build executables (OFF by default, set to ON for building the test executable)" OFF)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
