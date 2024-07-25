@@ -181,6 +181,8 @@ class ArgDefinition : public _BASE {
 
 };
 
+/* ArgParser */
+
 class ArgParser {
     public:
         ArgParser(int argc, char** argv);
