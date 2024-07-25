@@ -31,7 +31,7 @@ const std::list<DATA_T>& lemon::ListArg<DATA_T>::list() const {
 template <typename DATA_T>
 lemon::ListArg<DATA_T>::~ListArg() {}
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 template <class ARG_DEF>
 lemon::Arg<ARG_T, DATA_T, _BASE>::Arg(ARG_DEF& def) {
     std::unique_ptr<Arg<ARG_T, DATA_T, _BASE>> parsed_arg = def.parse();
@@ -40,16 +40,15 @@ lemon::Arg<ARG_T, DATA_T, _BASE>::Arg(ARG_DEF& def) {
     *this = *parsed_arg; 
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::Arg<ARG_T, DATA_T, _BASE>::operator bool() const {
     return m_has;
 }
 
 /* ArgDefiniton */
 
-template <lemon::ArgType ARG_T, typename DATA_T>
+template <lemon::ArgT ARG_T, typename DATA_T>
 lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ValueDefinition<ARG_T, DATA_T>::defaultValue(DATA_T&& default_val) {
-    static_assert(ARG_T == ArgType::Value, "Default value only supported for ArgType::Value");
     if (!!m_default_val) {
         throw std::invalid_argument("`defaultValue()` called twice for same argument");
     }
@@ -58,9 +57,17 @@ lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ValueDefinition<ARG_T, DATA_T>::defa
     return static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T>
+template <lemon::ArgT ARG_T, typename DATA_T>
+lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ValueDefinition<ARG_T, DATA_T>::options(std::initializer_list<DATA_T> options) {
+    if (!m_options.empty()) {
+        throw std::invalid_argument("`options()` called twice for same argument");
+    }
+    m_options = options;
+    return static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
+}
+
+template <lemon::ArgT ARG_T, typename DATA_T>
 lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ListDefinition<ARG_T, DATA_T>::defaultList(std::initializer_list<DATA_T> l) {
-    static_assert(ARG_T == ArgType::List, "Default list only supported for ArgType::List");
     if (!m_default_list.empty()) {
         throw std::invalid_argument("`defaultList()` called twice for same argument");
     }
@@ -68,13 +75,12 @@ lemon::ArgDefinition<ARG_T, DATA_T>& lemon::ListDefinition<ARG_T, DATA_T>::defau
     return static_cast<ArgDefinition<ARG_T, DATA_T>&>(*this);
 }
 
-
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::ArgDefinition(ArgParser* parser) 
     : m_parser(parser)
 {}
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::flag(char flag) {
     if (m_has_flag) {
         throw std::invalid_argument("`flag()` called twice for same argument");
@@ -84,7 +90,7 @@ lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, 
     return *this;
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::key(const char* key) {
     if (m_has_key) {
         throw std::invalid_argument("`key()` called twice for same argument");
@@ -94,7 +100,7 @@ lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, 
     return *this;
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::description(const char* desc) {
     if (m_has_desc) {
         throw std::invalid_argument("`description()` called twice for same argument");
@@ -104,9 +110,9 @@ lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, 
     return *this;
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::required() {
-    static_assert(ARG_T != ArgType::Indicator, "Cannot require indicator arg");
+    static_assert(ARG_T != ArgT::Check, "Cannot require a check arg");
     if (m_required) {
         throw std::invalid_argument("`required()` called twice for same argument");
     }
@@ -114,10 +120,10 @@ lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, 
     return *this;
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
 
-template <lemon::ArgType ARG_T, typename DATA_T, typename _BASE>
+template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() {
     if (!m_has_flag && !m_has_key) {
         throw std::invalid_argument("Must specify either a key or flag, did you call `flag()` or `key()`?");
@@ -134,35 +140,60 @@ std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _
     if (m_has_desc) {
         doc.description = m_desc;
     }
-    if constexpr (ARG_T == ArgType::Value) {
-        if (!!this->m_default_val) {
-            doc.default_value = m_parser->from(*this->m_default_val);
+
+    if (m_required) {
+        doc.required = true;
+    }
+
+    bool help = m_parser->m_help;
+
+    if constexpr (ARG_T == ArgT::Value) {
+        if (help) {
+            if (!!this->m_default_val) {
+                doc.default_value = m_parser->from(*this->m_default_val);
+            }
+            if (!this->m_options.empty()) {
+                std::string options_list_str = "<";
+                for (const auto& element : this->m_options) {
+                    options_list_str += m_parser->from(element);
+                    options_list_str.push_back(',');
+                    options_list_str.push_back(' ');
+                }
+                options_list_str.pop_back();
+                options_list_str.back() = '>';
+                doc.options = options_list_str;
+
+            }
         }
     }
-    if constexpr (ARG_T == ArgType::List) {
-        if (!this->m_default_list.empty()) {
-            std::string default_list_str = "[";
-            for (const auto& element : this->m_default_list) {
-                default_list_str += m_parser->from(element);
-                default_list_str.push_back(',');
-                default_list_str.push_back(' ');
+    if constexpr (ARG_T == ArgT::List) {
+        if (help) {
+            if (!this->m_default_list.empty()) {
+                std::string default_list_str = "[";
+                for (const auto& element : this->m_default_list) {
+                    default_list_str += m_parser->from(element);
+                    default_list_str.push_back(',');
+                    default_list_str.push_back(' ');
+                }
+                default_list_str.pop_back();
+                default_list_str.back() = ']';
+                doc.default_list = default_list_str;
             }
-            default_list_str.pop_back();
-            default_list_str.back() = ']';
-            doc.default_list = default_list_str;
         }
     }
 
-    m_parser->addDocumentation(std::move(doc));
+    if (help) {
+        m_parser->addDocumentation(std::move(doc));
+    }
 
     // Use the parser to lookup the values
     std::unique_ptr<Arg<ARG_T, DATA_T>> arg(new Arg<ARG_T, DATA_T>());
     arg->label = m_parser->getLabel(m_has_flag ? &m_flag : nullptr, m_key);
 
-    if constexpr (ARG_T == ArgType::Indicator) {
-        arg->m_has = m_parser->lookupIndicator(&m_flag, m_key);
+    if constexpr (ARG_T == ArgT::Check) {
+        arg->m_has = m_parser->lookupCheck(&m_flag, m_key);
     }
-    if constexpr (ARG_T == ArgType::Value) {
+    if constexpr (ARG_T == ArgT::Value) {
         auto[c_str_val, found] = m_parser->lookupCstrValue(&m_flag, m_key);
         if (found) {
             arg->m_val.reset(new DATA_T(m_parser->to<DATA_T>(std::string(c_str_val))));
@@ -171,8 +202,32 @@ std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _
             arg->m_val = this->m_default_val;
             arg->m_has = !!this->m_default_val;
         }
+        if (arg->m_has && !this->m_options.empty()) {
+            bool opt_found = false;
+            if (!!this->m_default_val) {
+                for (const auto& opt : this->m_options) {
+                    if (opt == *this->m_default_val) {
+                        opt_found = true;
+                    }
+                }
+                if (!opt_found) {
+                    ERROR("Default value for argument '" << arg->label << "': '" << m_parser->from<DATA_T>(*arg->m_val) << "' does not match any options");
+                    throw std::invalid_argument("Default not a valid value option");
+                }
+                opt_found = false;
+            }
+            for (const auto& opt : this->m_options) {
+                if (opt == *arg->m_val) {
+                    opt_found = true;
+                }
+            }
+            if (!opt_found && !help) {
+                ERROR("Value passed for argument '" << arg->label << "': '" << m_parser->from<DATA_T>(*arg->m_val) << "' does not match any options");
+                throw std::invalid_argument("Not a valid value option");
+            }
+        }
     }
-    if constexpr (ARG_T == ArgType::List) {
+    if constexpr (ARG_T == ArgT::List) {
         auto[c_str_val_list, found] = m_parser->lookupCstrList(&m_flag, m_key);
         if (found) {
             for (auto c_str_val : c_str_val_list) {
@@ -184,8 +239,8 @@ std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _
             arg->m_list = std::move(this->m_default_list);
         }
     }
-    if (m_required && !arg->m_has) {
-        ERROR("Argument '" << arg->label << "' must be specified");
+    if (m_required && !arg->m_has && !help) {
+        ERROR("Argument '" << arg->label << "' must be specified (required)");
         throw std::invalid_argument("Missing required argument");
     }
 
@@ -209,20 +264,20 @@ lemon::ArgParser::ArgParser(int argc, char** argv)
     m_unique_flags.insert('h');
 }
 
-template <lemon::ArgType ARG_T, typename DATA_T = void>
+template <lemon::ArgT ARG_T, typename DATA_T = void>
 lemon::ArgDefinition<ARG_T, DATA_T> lemon::ArgParser::addDef() {
     return ArgDefinition<ARG_T, DATA_T>(this);
 }
 
 bool lemon::ArgParser::enableHelp() {
     if (m_help) {
-        PRINT("\n   [Help]\n");
+        PRINT("\n [Help]\n");
 
         std::vector<std::string> key_and_flag_strs;
         key_and_flag_strs.reserve(m_docs.size());
 
         std::size_t max_length = 0;
-        for (auto&[flag, key, _, __, ___] : m_docs) {
+        for (auto&[flag, key, _0, _1, _2, _3, _4] : m_docs) {
             std::string key_and_flag;
             if (!!flag && !!key) {
                 key_and_flag = getKeyStr(key) + " or " + getFlagStr(flag);
@@ -245,12 +300,14 @@ bool lemon::ArgParser::enableHelp() {
         PRINT_NAMED(help_key_and_flag, "Display this message");
 
         std::size_t ind = 0;
-        for (auto&[flag, key, desc, default_val, default_list] : m_docs) {
+        for (auto&[flag, key, desc, default_val, options, default_list, req] : m_docs) {
             std::string description_display_str(desc);
             description_display_str.push_back(' ');
 
-            if (!default_val.empty()) description_display_str += " (Default value: " + default_val + ")";
-            if (!default_list.empty()) description_display_str += " (Default values: " + default_list + ")";
+            if (req) description_display_str += " [REQUIRED]";
+            if (!options.empty()) description_display_str += " (Options: " + options + ")";
+            if (!default_val.empty()) description_display_str += " (Default: " + default_val + ")";
+            if (!default_list.empty()) description_display_str += " (Default: " + default_list + ")";
             std::string key_and_flag_str_adj = key_and_flag_strs[ind++];
             key_and_flag_str_adj += std::string(max_length - key_and_flag_str_adj.size() + 1, ' ');
             PRINT_NAMED(key_and_flag_str_adj, description_display_str);
@@ -322,7 +379,7 @@ std::string lemon::ArgParser::getLabel(const char* flag, const char* key) {
     }
 }
 
-bool lemon::ArgParser::lookupIndicator(const char* flag, const char* key) {
+bool lemon::ArgParser::lookupCheck(const char* flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
     std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();

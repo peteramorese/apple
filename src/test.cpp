@@ -5,11 +5,11 @@ using namespace lemon;
 int main(int argc, char** argv) {
     lemon::ArgParser parser(argc, argv);
 
-    Arg<ArgType::Indicator> test = parser.addDef<ArgType::Indicator>().flag('t').key("test").description("This is a test");
-    Arg<ArgType::Indicator> beep = parser.addDef<ArgType::Indicator>().flag('b').key("beep").description("beep borp");
-    Arg<ArgType::Value, int> val = parser.addDef<ArgType::Value, int>().flag('d').key("dhoom").description("an integerrr").defaultValue(4);
-    Arg<ArgType::List, int> ll = parser.addDef<ArgType::List, int>().flag('l').key("my-list").description("a listerino :D").defaultList({1, 2, 3, 4, 5});
-    Arg<ArgType::Value, int> val2 = parser.addDef<ArgType::Value, int>().key("goo").description("require meeee").required();
+    Arg<ArgT::Check> test = parser.addDef<ArgT::Check>().flag('t').key("test").description("This is a test");
+    Arg<ArgT::Check> beep = parser.addDef<ArgT::Check>().flag('b').key("beep").description("beep borp");
+    Arg<ArgT::Value, int> val = parser.addDef<ArgT::Value, int>().flag('d').key("dhoom").description("an integerrr").defaultValue(2).options({1, 2, 3, 55});
+    Arg<ArgT::List, int> ll = parser.addDef<ArgT::List, int>().flag('l').key("my-list").description("a listerino :D").defaultList({1, 2, 3, 4, 5}).required();
+    Arg<ArgT::Value, int> val2 = parser.addDef<ArgT::Value, int>().key("goo").description("require meeee").required();
 
     parser.enableHelp();
 

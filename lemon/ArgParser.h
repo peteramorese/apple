@@ -11,8 +11,8 @@
 
 namespace lemon {
 
-enum class ArgType {
-    Indicator, 
+enum class ArgT {
+    Check, 
     Value, 
     List, 
     File //TODO
@@ -20,32 +20,32 @@ enum class ArgType {
 
 
 // Conditional inheriter
-template <ArgType ARG_T, class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
+template <ArgT ARG_T, class CHECK_T, class VALUE_T, class LIST_T, class FILE_T>
 struct conditional_base;
 
-template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
-struct conditional_base<ArgType::Indicator, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = INDICATOR_T;};
-template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
-struct conditional_base<ArgType::Value, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = VALUE_T;};
-template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
-struct conditional_base<ArgType::List, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = LIST_T;};
-template <class INDICATOR_T, class VALUE_T, class LIST_T, class FILE_T>
-struct conditional_base<ArgType::File, INDICATOR_T, VALUE_T, LIST_T, FILE_T> {using type = FILE_T;};
+template <class CHECK_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgT::Check, CHECK_T, VALUE_T, LIST_T, FILE_T> {using type = CHECK_T;};
+template <class CHECK_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgT::Value, CHECK_T, VALUE_T, LIST_T, FILE_T> {using type = VALUE_T;};
+template <class CHECK_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgT::List, CHECK_T, VALUE_T, LIST_T, FILE_T> {using type = LIST_T;};
+template <class CHECK_T, class VALUE_T, class LIST_T, class FILE_T>
+struct conditional_base<ArgT::File, CHECK_T, VALUE_T, LIST_T, FILE_T> {using type = FILE_T;};
 
 // Forward dec
 class ArgParser;
 
 class IndicatorDefinition;
 
-template <ArgType ARG_T, typename DATA_T>
+template <ArgT ARG_T, typename DATA_T>
 class ValueDefinition;
 
-template <ArgType ARG_T, typename DATA_T>
+template <ArgT ARG_T, typename DATA_T>
 class ListDefinition;
 
 class FileDefinition;
 
-template <ArgType ARG_T, typename DATA_T = void, typename _BASE = typename conditional_base<ARG_T, IndicatorDefinition, ValueDefinition<ARG_T, DATA_T>, ListDefinition<ARG_T, DATA_T>, FileDefinition>::type>
+template <ArgT ARG_T, typename DATA_T = void, typename _BASE = typename conditional_base<ARG_T, IndicatorDefinition, ValueDefinition<ARG_T, DATA_T>, ListDefinition<ARG_T, DATA_T>, FileDefinition>::type>
 class ArgDefinition;
 
 /* Arg classes */
@@ -65,7 +65,7 @@ class ValueArg : public ArgBase {
 
         ~ValueArg();
 
-        template <ArgType ARG_T, typename _DATA_T, typename _BASE>
+        template <ArgT ARG_T, typename _DATA_T, typename _BASE>
         friend class ArgDefinition;
     protected:
         std::shared_ptr<DATA_T> m_val = nullptr;
@@ -79,7 +79,7 @@ class ListArg : public ArgBase {
 
         ~ListArg();
 
-        template <ArgType ARG_T, typename _DATA_T, typename _BASE>
+        template <ArgT ARG_T, typename _DATA_T, typename _BASE>
         friend class ArgDefinition;
     protected:
         std::list<DATA_T> m_list;
@@ -88,7 +88,7 @@ class ListArg : public ArgBase {
 /* TODO */
 class FileArg {};
 
-template <ArgType ARG_T, typename DATA_T = void, typename _BASE = typename conditional_base<ARG_T, IndicatorArg, ValueArg<DATA_T>, ListArg<DATA_T>, FileArg>::type>
+template <ArgT ARG_T, typename DATA_T = void, typename _BASE = typename conditional_base<ARG_T, IndicatorArg, ValueArg<DATA_T>, ListArg<DATA_T>, FileArg>::type>
 class Arg : public _BASE {
     public:
         Arg() = default;
@@ -101,7 +101,7 @@ class Arg : public _BASE {
         /// @brief Check if the argument was passed
         operator bool() const;
 
-        template <ArgType _ARG_T, typename _DATA_T, typename __BASE>
+        template <ArgT _ARG_T, typename _DATA_T, typename __BASE>
         friend class ArgDefinition;
     private:
         bool m_has = false;
@@ -112,18 +112,23 @@ class Arg : public _BASE {
 
 class IndicatorDefinition {};
 
-template <ArgType ARG_T, typename DATA_T>
+template <ArgT ARG_T, typename DATA_T>
 class ValueDefinition {
     public:
         /// @brief Supply a default value. Only enabled for Value type
         /// @param default_val Default value
         [[nodiscard]] ArgDefinition<ARG_T, DATA_T>& defaultValue(DATA_T&& default_val);
 
+        /// @brief Supply a default value. Only enabled for Value type
+        /// @param default_val Default value
+        [[nodiscard]] ArgDefinition<ARG_T, DATA_T>& options(std::initializer_list<DATA_T> options);
+
     public:
         std::shared_ptr<DATA_T> m_default_val = nullptr;
+        std::list<DATA_T> m_options;
 };
 
-template <ArgType ARG_T, typename DATA_T>
+template <ArgT ARG_T, typename DATA_T>
 class ListDefinition {
     public:
         /// @brief Supply a default list. Only enabled for List type
@@ -136,7 +141,7 @@ class ListDefinition {
 
 class FileDefinition {};
 
-template <ArgType ARG_T, typename DATA_T, typename _BASE>
+template <ArgT ARG_T, typename DATA_T, typename _BASE>
 class ArgDefinition : public _BASE {
     public:
         ArgDefinition(ArgParser* parser);
@@ -193,12 +198,12 @@ class ArgParser {
         template <typename T>
         std::string from(const T& v);
 
-        template <ArgType ARG_T, typename DATA_T = void>
+        template <ArgT ARG_T, typename DATA_T = void>
         ArgDefinition<ARG_T, DATA_T> addDef();
 
         bool enableHelp();
 
-        template <ArgType ARG_T, typename DATA_T, typename _BASE>
+        template <ArgT ARG_T, typename DATA_T, typename _BASE>
         friend class ArgDefinition;
     private:
         struct Documentation {
@@ -206,7 +211,9 @@ class ArgParser {
             const char* key = nullptr;
             const char* description = nullptr;
             std::string default_value = std::string();
+            std::string options = std::string();
             std::string default_list = std::string();
+            bool required = false;
         };
 
     private:
@@ -214,7 +221,7 @@ class ArgParser {
         inline std::string getFlagStr(char flag) const;
         inline std::string getKeyStr(const char* key) const;
         std::string getLabel(const char* flag, const char* key);
-        bool lookupIndicator(const char* flag, const char* key);
+        bool lookupCheck(const char* flag, const char* key);
         std::pair<const char*, bool> lookupCstrValue(const char* flag, const char* key);
         std::pair<std::list<const char*>, bool> lookupCstrList(const char* flag, const char* key);
 
