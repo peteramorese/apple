@@ -82,31 +82,28 @@ lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::ArgDefinition(ArgParser* parser)
 
 template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::flag(char flag) {
-    if (m_has_flag) {
+    if (!!m_flag) {
         throw std::invalid_argument("`flag()` called twice for same argument");
     }
     m_flag = flag;
-    m_has_flag = true;
     return *this;
 }
 
 template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::key(const char* key) {
-    if (m_has_key) {
+    if (!!m_key) {
         throw std::invalid_argument("`key()` called twice for same argument");
     }
     m_key = key;
-    m_has_key = true;
     return *this;
 }
 
 template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 lemon::ArgDefinition<ARG_T, DATA_T, _BASE>& lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::description(const char* desc) {
-    if (m_has_desc) {
+    if (!!m_desc) {
         throw std::invalid_argument("`description()` called twice for same argument");
     }
     m_desc = desc;
-    m_has_desc = true;
     return *this;
 }
 
@@ -125,19 +122,19 @@ lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::~ArgDefinition() {}
 
 template <lemon::ArgT ARG_T, typename DATA_T, typename _BASE>
 std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _BASE>::parse() {
-    if (!m_has_flag && !m_has_key) {
+    if (!m_flag && !m_key) {
         throw std::invalid_argument("Must specify either a key or flag, did you call `flag()` or `key()`?");
     }
 
     // Add documentation
     ArgParser::Documentation doc;
-    if (m_has_flag) {
+    if (!!m_flag) {
         doc.flag = m_flag;
     }
-    if (m_has_key) {
+    if (!!m_key) {
         doc.key = m_key;
     }
-    if (m_has_desc) {
+    if (m_desc) {
         doc.description = m_desc;
     }
 
@@ -188,13 +185,13 @@ std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _
 
     // Use the parser to lookup the values
     std::unique_ptr<Arg<ARG_T, DATA_T>> arg(new Arg<ARG_T, DATA_T>());
-    arg->label = m_parser->getLabel(m_has_flag ? &m_flag : nullptr, m_key);
+    arg->label = m_parser->getLabel(m_flag, m_key);
 
     if constexpr (ARG_T == ArgT::Check) {
-        arg->m_has = m_parser->lookupCheck(&m_flag, m_key);
+        arg->m_has = m_parser->lookupCheck(m_flag, m_key);
     }
     if constexpr (ARG_T == ArgT::Value) {
-        auto[c_str_val, found] = m_parser->lookupCstrValue(&m_flag, m_key);
+        auto[c_str_val, found] = m_parser->lookupCstrValue(m_flag, m_key);
         if (found) {
             arg->m_val.reset(new DATA_T(m_parser->to<DATA_T>(std::string(c_str_val))));
             arg->m_has = true;
@@ -228,7 +225,7 @@ std::unique_ptr<lemon::Arg<ARG_T, DATA_T>> lemon::ArgDefinition<ARG_T, DATA_T, _
         }
     }
     if constexpr (ARG_T == ArgT::List) {
-        auto[c_str_val_list, found] = m_parser->lookupCstrList(&m_flag, m_key);
+        auto[c_str_val_list, found] = m_parser->lookupCstrList(m_flag, m_key);
         if (found) {
             for (auto c_str_val : c_str_val_list) {
                 arg->m_list.push_back(m_parser->to<DATA_T>(std::string(c_str_val)));
@@ -328,12 +325,12 @@ bool lemon::ArgParser::enableHelp() {
     return true;
 }
 
-bool lemon::ArgParser::isValue(const char* first_char) const {
-    return *first_char != '-';
+bool lemon::ArgParser::isValue(char first_char) const {
+    return first_char != '-';
 }
 
 std::string lemon::ArgParser::getFlagStr(char flag) const {
-    if (!isValue(&flag)) {
+    if (!isValue(flag)) {
         throw std::invalid_argument("Dash character '-' is not a valid flag");
     }
     std::string s;
@@ -343,18 +340,18 @@ std::string lemon::ArgParser::getFlagStr(char flag) const {
 }
 
 std::string lemon::ArgParser::getKeyStr(const char* key) const {
-    if (!isValue(key)) {
+    if (!!key && !isValue(key[0])) {
         throw std::invalid_argument("Key definition must not start with dashes '-'");
     }
     return "--" + std::string(key);
 }
 
-void lemon::ArgParser::checkNewFlag(const char* flag) {
-    if (!!flag && m_unique_flags.find(*flag) != m_unique_flags.end()) {
-        ERROR("Duplicate flag: " << *flag);
+void lemon::ArgParser::checkNewFlag(char flag) {
+    if (!!flag && m_unique_flags.find(flag) != m_unique_flags.end()) {
+        ERROR("Duplicate flag: " << flag);
         throw std::logic_error("Duplicate flag");
     } else if (!!flag) {
-        m_unique_flags.insert(*flag);
+        m_unique_flags.insert(flag);
     }
 }
 
@@ -367,22 +364,22 @@ void lemon::ArgParser::checkNewKey(const char* key) {
     }
 }
 
-std::string lemon::ArgParser::getLabel(const char* flag, const char* key) {
+std::string lemon::ArgParser::getLabel(char flag, const char* key) {
     if (!!key && !!flag) {
-        return getKeyStr(key) + " (" + getFlagStr(*flag) + ")";
+        return getKeyStr(key) + " (" + getFlagStr(flag) + ")";
     } else if (!!key) {
         return getKeyStr(key);
     } else if (!!flag) {
-        return getFlagStr(*flag);
+        return getFlagStr(flag);
     } else {
         throw std::invalid_argument("Cannot get label if flag and key are unspecified");
     }
 }
 
-bool lemon::ArgParser::lookupCheck(const char* flag, const char* key) {
+bool lemon::ArgParser::lookupCheck(char flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
-    std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
+    std::string flag_str = !!flag ? getFlagStr(flag) : std::string();
     std::string key_str = !!key ? getKeyStr(key) : std::string();
 
     if (m_help) {
@@ -395,7 +392,7 @@ bool lemon::ArgParser::lookupCheck(const char* flag, const char* key) {
         }
 
         std::string arg = m_argv[i];
-        if ((flag && arg == flag_str) || (key && arg == key_str)) {
+        if ((!!flag && arg == flag_str) || (key && arg == key_str)) {
             m_checked[i] = true;
             return true;
         }
@@ -403,10 +400,10 @@ bool lemon::ArgParser::lookupCheck(const char* flag, const char* key) {
     return false;
 }
 
-std::pair<const char*, bool> lemon::ArgParser::lookupCstrValue(const char* flag, const char* key) {
+std::pair<const char*, bool> lemon::ArgParser::lookupCstrValue(char flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
-    std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
+    std::string flag_str = !!flag ? getFlagStr(flag) : std::string();
     std::string key_str = !!key ? getKeyStr(key) : std::string();
 
     if (m_help) {
@@ -421,14 +418,14 @@ std::pair<const char*, bool> lemon::ArgParser::lookupCstrValue(const char* flag,
         std::string arg = m_argv[i];
         if ((!!flag && arg == flag_str) || (!!key && arg == key_str)) {
             m_checked[i] = true;
-            if ((i == m_argc - 1) || !isValue(m_argv[i + 1])) {
+            if ((i == m_argc - 1) || !isValue(*(m_argv[i + 1]))) {
                 ERROR("Missing value for '" << getLabel(flag, key) << "'");
                 throw std::invalid_argument("Missing value");
             }
-            if ((i < m_argc - 2) && isValue(m_argv[i + 2])) {
+            if ((i < m_argc - 2) && isValue(*(m_argv[i + 2]))) {
                 WARN("Found multiple values for '" << getLabel(flag, key) << "' when only one is expected. Ignoring extra values");
                 for (std::size_t j = i + 1; j < m_argc; ++j) {
-                    if (!isValue(m_argv[j])) {
+                    if (!isValue(*(m_argv[j]))) {
                         break;
                     }
                     m_checked[j] = true;
@@ -442,10 +439,10 @@ std::pair<const char*, bool> lemon::ArgParser::lookupCstrValue(const char* flag,
     return {nullptr, false};
 }
 
-std::pair<std::list<const char*>, bool> lemon::ArgParser::lookupCstrList(const char* flag, const char* key) {
+std::pair<std::list<const char*>, bool> lemon::ArgParser::lookupCstrList(char flag, const char* key) {
     checkNewFlag(flag); 
     checkNewKey(key); 
-    std::string flag_str = !!flag ? getFlagStr(*flag) : std::string();
+    std::string flag_str = !!flag ? getFlagStr(flag) : std::string();
     std::string key_str = !!key ? getKeyStr(key) : std::string();
 
     if (m_help) {
@@ -460,15 +457,15 @@ std::pair<std::list<const char*>, bool> lemon::ArgParser::lookupCstrList(const c
         }
 
         std::string arg = m_argv[i];
-        if ((flag && arg == flag_str) || (key && arg == key_str)) {
+        if ((!!flag && arg == flag_str) || (key && arg == key_str)) {
             m_checked[i] = true;
-            if ((i == m_argc - 1) || !isValue(m_argv[i + 1])) {
+            if ((i == m_argc - 1) || !isValue(*(m_argv[i + 1]))) {
                 ERROR("Missing value(s) for '" << getLabel(flag, key) << "'");
                 throw std::invalid_argument("Missing value(s)");
             }
             
             for (std::size_t j = i + 1; j < m_argc; ++j) {
-                if (!isValue(m_argv[j])) {
+                if (!isValue(*(m_argv[j]))) {
                     break;
                 }
                 m_checked[j] = true;

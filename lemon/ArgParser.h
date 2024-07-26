@@ -173,15 +173,12 @@ class ArgDefinition : public _BASE {
     private:
         ArgParser* m_parser;
 
-        bool m_has_flag = false;
-        bool m_has_key = false;
-        bool m_has_desc = false;
         bool m_required = false;
 
         bool m_parsed = false;
 
         char m_flag = '\0';
-        const char* m_key = nullptr;;
+        const char* m_key = nullptr;
         const char* m_desc = nullptr;
 
 };
@@ -217,17 +214,17 @@ class ArgParser {
         };
 
     private:
-        bool isValue(const char* first_char) const;
+        bool isValue(char first_char) const;
         inline std::string getFlagStr(char flag) const;
         inline std::string getKeyStr(const char* key) const;
-        std::string getLabel(const char* flag, const char* key);
-        bool lookupCheck(const char* flag, const char* key);
-        std::pair<const char*, bool> lookupCstrValue(const char* flag, const char* key);
-        std::pair<std::list<const char*>, bool> lookupCstrList(const char* flag, const char* key);
+        std::string getLabel(char flag, const char* key);
+        bool lookupCheck(char flag, const char* key);
+        std::pair<const char*, bool> lookupCstrValue(char flag, const char* key);
+        std::pair<std::list<const char*>, bool> lookupCstrList(char flag, const char* key);
 
         void addDocumentation(Documentation&& documentation);
 
-        void checkNewFlag(const char* flag);
+        void checkNewFlag(char flag);
         void checkNewKey(const char* key);
 
 
