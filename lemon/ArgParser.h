@@ -180,7 +180,7 @@ class ArgDefinition : public _BASE {
 
         bool m_parsed = false;
 
-        char m_flag;
+        char m_flag = '\0';
         const char* m_key = nullptr;;
         const char* m_desc = nullptr;
 
