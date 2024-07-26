@@ -1,4 +1,5 @@
 #include "lemon/ArgParser.h"
+#include "lemon/Random.h"
 
 using namespace lemon;
 
@@ -19,5 +20,7 @@ int main(int argc, char** argv) {
     for (auto e : ll.list()) {
         PRINT(e);
     }
+
+    DEBUG("rng: " << RNG::nrandd());
     return 0;
 }
