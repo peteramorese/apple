@@ -298,8 +298,12 @@ bool lemon::ArgParser::enableHelp() {
 
         std::size_t ind = 0;
         for (auto&[flag, key, desc, default_val, options, default_list, req] : m_docs) {
-            std::string description_display_str(desc);
-            description_display_str.push_back(' ');
+
+            std::string description_display_str;
+            if (!!desc) {
+                description_display_str = std::string(desc);
+                description_display_str.push_back(' ');
+            }
 
             if (req) description_display_str += " [REQUIRED]";
             if (!options.empty()) description_display_str += " (Options: " + options + ")";
