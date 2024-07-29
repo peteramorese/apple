@@ -41,3 +41,11 @@ float lemon::ArgParser::to<float>(const std::string& str) {
 }
 template <>
 std::string lemon::ArgParser::from<float>(const float& v) {return std::to_string(v);}
+
+template <>
+double lemon::ArgParser::to<double>(const std::string& str) {
+    std::string::size_type sz;
+    return std::stod(str, &sz);
+}
+template <>
+std::string lemon::ArgParser::from<double>(const double& v) {return std::to_string(v);}
