@@ -46,7 +46,27 @@
     #define WARN(msg) 
     #define NEW_LINE 
 #else
-    #define LOG(msg) std::cout << "\r\033[1;36m >[LOG]\033[0;37m " << msg << "\033[0m \n"
+    namespace lemon {
+
+    class Logger {
+        public:        
+            static void setLogLevel(uint32_t lvl);
+            
+            /* TODO */
+            //static void storeLogsAtLevel(uint32_t lvl);
+
+        private:
+            static uint32_t s_log_lvl;
+    };
+
+    uint32_t Logger::s_log_lvl = 0;
+
+    }
+
+    #define REGISTER_LOG_LVL(lvl) Logger::setLogLevel(lvl);
+    /* TODO */
+    #define LOG(level, msg) std::cout << "\r\033[1;36m [LOG]\033[0;37m " << msg << "\033[0m \n"
+
     #define PRINT(msg) std::cout << "\033[0;37m" << msg << "\033[0m \n"
     #define PRINT_VEC2(msg, vec2) std::cout << "\033[0;37m" << msg << " (" << vec2[0] << ", " << vec2[1] << ")\033[0m \n"
     #define PRINT_VEC3(msg, vec3) std::cout << "\033[0;37m" << msg << " (" << vec3[0] << ", " << vec3[1] << ", " << vec3[2] << ")\033[0m \n"
